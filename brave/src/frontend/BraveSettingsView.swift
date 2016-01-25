@@ -1,4 +1,8 @@
+import Crashlytics
+
 class BraveSettingsView : AppSettingsTableViewController {
+
+    var debugToggleItemToTriggerCrashCount = 0
 
     override func generateSettings() -> [SettingSection] {
         var settings = [SettingSection]()
@@ -13,8 +17,17 @@ class BraveSettingsView : AppSettingsTableViewController {
             BoolSetting(prefs: prefs, prefKey: AdBlocker.prefKeyAdBlockOn, defaultValue: true, titleText: "Block Ads"),
             BoolSetting(prefs: prefs, prefKey: TrackingProtection.prefKeyTrackingProtectionOn, defaultValue: true, titleText: "Tracking Protection"),
             BoolSetting(prefs: prefs, prefKey: HttpsEverywhere.prefKeyHttpsEverywhereOn, defaultValue: true, titleText: "HTTPS Everywhere"),
-            BoolSetting(prefs: prefs, prefKey: BraveUX.PrefKeyIsToolbarHidingEnabled , defaultValue: true, titleText: "Hide toolbar when scrolling", statusText: nil, settingDidChange:  { value in BraveScrollController.hideShowToolbarEnabled = value })
+            BoolSetting(prefs: prefs, prefKey: BraveUX.PrefKeyIsToolbarHidingEnabled , defaultValue: true, titleText: "Hide toolbar when scrolling", statusText: nil, settingDidChange:  { value in
+                BraveScrollController.hideShowToolbarEnabled = value
 
+                // Hidden way to trigger a crash for testing
+                if (self.debugToggleItemToTriggerCrashCount > 4) {
+                    UIAlertView(title: "Trigger a crash for testing", message: "Force a crash?", delegate: self, cancelButtonTitle: "Cancel", otherButtonTitles: "OK").show()
+                    self.debugToggleItemToTriggerCrashCount = 0
+                } else {
+                    self.debugToggleItemToTriggerCrashCount++
+                }
+            })
        ]
 
 
@@ -41,5 +54,14 @@ class BraveSettingsView : AppSettingsTableViewController {
         ]
         
         return settings
+    }
+}
+
+extension BraveSettingsView : UIAlertViewDelegate {
+    func alertView(alertView: UIAlertView, didDismissWithButtonIndex buttonIndex: Int) {
+        if buttonIndex == alertView.cancelButtonIndex {
+            return
+        }
+        Crashlytics.sharedInstance().crash()
     }
 }
